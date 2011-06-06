@@ -1,4 +1,4 @@
-![alt text](kiss.png "MarilynRPC")
+![alt text](https://raw.github.com/threez/marilyn-rpc/master/kiss.png "MarilynRPC")
 
 # MarilynRPC
 
