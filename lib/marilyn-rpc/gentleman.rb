@@ -51,12 +51,15 @@ class MarilynRPC::Gentleman
   # The handler that will send the response to the remote system
   # @param [Object] args the arguments that should be handled by the callback,
   #   the reponse of the callback will be send as result
+  # @api private
   def handle(*args)
     mail = MarilynRPC::CallResponseMail.new(self.tag, self.callback.call(*args))
     connection.send_mail(mail)
   end
   
-  # The helper that will be called by the deferable to call {handle} later
+  # The helper that will be called by the deferable to call 
+  # {MarilynRPC::Gentleman#handle} later
+  # @api private
   def helper
     gentleman = self
     lambda { |*args| gentleman.handle(*args) }

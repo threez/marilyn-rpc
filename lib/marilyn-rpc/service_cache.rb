@@ -39,9 +39,20 @@ class MarilynRPC::ServiceCache
       return service
     # it's not in the cache, so try lookup in the service registry
     elsif service = MarilynRPC::Service.registry[path]
-      return (@services[path] = service.new)
+      @services[path] = service.new
+      @services[path].execute_after_connect_callback!
+      return @services[path]
     else
-      raise ArgumentError.new("Service #{mail.path} unknown!")
+      raise ArgumentError.new("Service #{path} unknown!")
+    end
+  end
+  
+  # issue the disconnect callbacks for all living services of this connection
+  # @node this should only be called once by the server
+  # @api private
+  def call_after_disconnect_callbacks!
+    @services.each do |path, service|
+      service.execute_after_disconnect_callback!
     end
   end
 end

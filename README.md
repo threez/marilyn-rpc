@@ -84,6 +84,30 @@ typical setups.
 
     client.disconnect
     
+## Service Events
+
+Because a client has a dedicated service it is possible to add connect and
+disconnect callbacks. These callbacks may help your application to
+request/cache/optimize certain aspects of your service. Here is an example:
+
+    class EventsService < MarilynRPC::Service
+      register :events
+      after_connect :connected
+      after_disconnect :disconnected
+  
+      def connected
+        puts "client connected"
+      end
+  
+      def notify(msg)
+        puts msg
+      end
+  
+      def disconnected
+        puts "client disconnected"
+      end
+    end
+
 ## Async Server Example
 
 As previously said, the server can use the `Gentleman` to issue asynchronous

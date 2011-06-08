@@ -39,5 +39,7 @@ module MarilynRPC::Server
   end
   
   # Handler for client disconnect
-  def unbind; end
+  def unbind
+    @cache.call_after_disconnect_callbacks!
+  end
 end
