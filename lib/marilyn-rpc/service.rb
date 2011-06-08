@@ -35,32 +35,44 @@ class MarilynRPC::Service
     @@registry || {}
   end
   
-  # register one or more connect callbacks
-  # @param [Array<Symbol>, Array<String>] callbacks
+  # register one or more connect callbacks, a callback is simply a method
+  # defined in the class
+  # @param [Array<Symbol>, Array<String>] callbacks the method names
   def self.after_connect(*callbacks)
-    @@_after_connect_callbacks ||= []
-    @@_after_connect_callbacks += callbacks
+    register_callbacks :after_connect, callbacks
   end
   
-  # register one or more disconnect callbacks
-  # @param [Array<Symbol>, Array<String>] callbacks
+  # register one or more disconnect callbacks, a callback is simply a method
+  # defined in the class
+  # @param [Array<Symbol>, Array<String>] callbacks the method names
   def self.after_disconnect(*callbacks)
-    @@_after_disconnect_callbacks ||= []
-    @@_after_disconnect_callbacks += callbacks
+    register_callbacks :after_disconnect, callbacks
+  end
+  
+  # registers a callbacks for the service class
+  # @param [Symbol] name the name under which the callbacks should be saved
+  # @param [Array<Symbol>, Array<String>] callbacks the method names
+  # @api private
+  def self.register_callbacks(name, callbacks)
+    @_callbacks ||= {}         # initialize callbacks
+    @_callbacks[name] ||= []   # initialize specific set
+    @_callbacks[name] += callbacks
+  end
+  
+  # returns the registered callbacks for name
+  # @param [Symbol] name the name to lookup callbacks for
+  # @return [Array<String>, Array<Symbol>] an array of callback names, or an
+  #   empty array
+  # @api private
+  def self.registered_callbacks(name)
+    (@_callbacks || {})[name] || []
   end
   
   # calls the defined connect callbacks
+  # @param [Symbol] the name of the callbacks to run
   # @api private
-  def execute_after_connect_callback!
-    (@@_after_connect_callbacks || []).each do |callback|
-      self.send(callback)
-    end
-  end
-  
-  # calls the defined diconnect callbacks
-  # @api private
-  def execute_after_disconnect_callback!
-    (@@_after_disconnect_callbacks || []).each do |callback|
+  def run_callbacks!(name)
+    self.class.registered_callbacks(name).each do |callback|
       self.send(callback)
     end
   end
