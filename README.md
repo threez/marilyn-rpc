@@ -108,6 +108,19 @@ request/cache/optimize certain aspects of your service. Here is an example:
       end
     end
 
+## Security
+
+If you are using a tcp connection you can secure the connection using tls/ssl.
+To enable it on the server side one has to pass the secure flag:
+
+    EM.run {
+      EM.start_server("localhost", 8008, MarilynRPC::Server, :secure => true)
+    }
+
+The client also simply has to enable a secure connection:
+
+    client = MarilynRPC::NativeClient.connect_tcp('localhost', 8008, :secure => true)
+
 ## Async Server Example
 
 As previously said, the server can use the `Gentleman` to issue asynchronous

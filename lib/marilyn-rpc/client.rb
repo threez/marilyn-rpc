@@ -73,9 +73,27 @@ module MarilynRPC
     # Connect to a tcp socket.
     # @param [String] host the host to cennect to (e.g. 'localhost')
     # @param [Integer] port the port to connect to (e.g. 8000)
-    # @return [MarilynRPC::NativeClient] the cónnected client
-    def self.connect_tcp(host, port)
-      new(TCPSocket.open(host, port))
+    # @param [Hash] options the
+    # @option options [Boolean] :secure use tls/ssl for the connection
+    #   `true` or `false`
+    # @option options [OpenSSL::SSL::SSLContext] :ssl_context can be used to
+    #   change the ssl context of the newly created secure connection. Only
+    #   takes effect if `:secure` option is enabled.
+    # @return [MarilynRPC::NativeClient] the connected client
+    def self.connect_tcp(host, port, options = {})
+      if options[:secure] == true
+        require 'openssl' # use openssl for secure connections
+        socket = TCPSocket.new(host, port)
+        if ssl_context = options[:ssl_context]
+          secure_socket = OpenSSL::SSL::SSLSocket.new(socket, ssl_context)
+        else
+          secure_socket = OpenSSL::SSL::SSLSocket.new(socket)
+        end
+        secure_socket.connect
+        new(secure_socket)
+      else
+        new(TCPSocket.open(host, port))
+      end
     end
   end
 end
