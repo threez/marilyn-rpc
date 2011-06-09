@@ -19,15 +19,13 @@ class MarilynRPC::Envelope
     @buffer += data
     overhang = nil
 
-    # parse the length field of the 
-    if @size.nil? && @buffer.size >= 4 
+    if @size.nil?
+      # parse the length field of the 
       # extract 4 bytes length header
-      @size = @buffer.slice!(0...4).unpack("N").first
-    end
-    
-    # envelope is complete and contains overhang
-    if !@size.nil? && @buffer.size > @size
-      overhang = @buffer.slice!(@size, @buffer.size)
+      @size = @buffer.slice!(0...4).unpack("N").first if @buffer.size >= 4 
+    else
+      # envelope is complete and contains overhang
+      overhang = @buffer.slice!(@size, @buffer.size) if @buffer.size > @size
     end
     
     overhang
