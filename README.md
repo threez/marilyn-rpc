@@ -11,11 +11,12 @@ service objects will be used, if (and only if) they are requested by the client.
 Since this is a session dedicated to one connection, marilyn has support for per 
 connection caching by using instance variables. Further on, it is planned to 
 enhance the capabilities of marilyn to allow connection based authentication.
-Like in other protocols (e.g. IMAP) where come method can be called
-unauthenticated and some not. We plan to enable TLS to have a secure connection.
+Like in other protocols (e.g. IMAP) where some methods can be called
+unauthenticated and some not.
+
 Like in IMAP marilyn supports sending of multiple requests to a server over one
-connection. This feature is not supported by the current client implementation,
-but things will get changed in the feature.
+connection. This feature is called multiplexing supported by the current
+`NativeClient` implementation.
 
 The services rely on the eventmachine reactor. Marilyn supports asynchronous
 responses based on the so called `Gentleman`. This class is a proxy object that
