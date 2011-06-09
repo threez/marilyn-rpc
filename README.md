@@ -121,15 +121,47 @@ The client also simply has to enable a secure connection:
 
     client = MarilynRPC::NativeClient.connect_tcp('localhost', 8008, :secure => true)
 
-## Async Server Example
+## Async Server Example & NativeClient
 
 As previously said, the server can use the `Gentleman` to issue asynchronous
 responses:
 
-    TODO ...
+    class SimpleCommandService < MarilynRPC::Service
+      register :cmd
+
+      def exec(line)
+        MarilynRPC::Gentleman.proxy do |helper|
+          EM.system(line, &helper)
+
+          lambda do |output,status|
+            if (code = status.exitstatus) == 0
+              output 
+            else
+              code
+            end
+          end
+        end
+      end
+    end
 
 The asynchronous server is transparent to the client. The client, doen't even
-know, that his request is processed asynchronously.
+know, that his request is processed asynchronously. If the client make use of
+the multiplexing feature he can use multiple threads to do so:
+
+    client = MarilynRPC::NativeClient.connect_tcp('localhost', 8000)
+    SimpleCommandService = client.for(:cmd)
+
+    start_time = Time.now
+
+    Thread.new do
+      SimpleCommandService.exec("sleep 5")
+      puts "=== ls -al\n: " + SimpleCommandService.exec("ls -al")
+    end
+
+    Thread.new do
+      SimpleCommandService.exec("sleep 2")
+      puts "=== uname -a\n: " + SimpleCommandService.exec("uname -a")
+    end
 
 ## License / Author
 

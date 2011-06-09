@@ -1,35 +1,23 @@
 require 'socket'
+require 'thread'
 
 module MarilynRPC
-  class NativeClientProxy
+  class BlankSlate
+    instance_methods.each { |m| undef_method m unless m =~ /^__/ }
+  end
+  
+  class NativeClientProxy < BlankSlate
     # Creates a new Native client proxy, were the calls get send to the remote
     # side.
     # @param [Object] path the path that is used to identify the service
-    # @param [Socekt] socket the socket to use for communication
-    def initialize(path, socket)
-      @path, @socket = path, socket
+    # @param [NativeClient] client the client to use for communication
+    def initialize(path, client)
+      @path, @client = path, client
     end
 
     # Handler for calls to the remote system
     def method_missing(method, *args, &block)
-      # since this client can't multiplex, we set the tag to nil
-      @socket.write(MarilynRPC::MailFactory.build_call(nil, @path, method, args))
-
-      # read the answer of the server back in
-      answer = MarilynRPC::Envelope.new
-      # read the header to have the size
-      answer.parse!(@socket.read(4))
-      # so now that we know the site, read the rest of the envelope
-      answer.parse!(@socket.read(answer.size))
-
-      # returns the result part of the mail or raise the exception if there is 
-      # one
-      mail = MarilynRPC::MailFactory.unpack(answer)
-      if mail.is_a? MarilynRPC::CallResponseMail
-        mail.result
-      else
-        raise mail.exception
-      end
+      @client.execute(@path, method, args)
     end
   end
 
@@ -47,6 +35,27 @@ module MarilynRPC
     # @param [Socket] socket the socket to manage
     def initialize(socket)
       @socket = socket
+      @semaphore = Mutex.new
+      @threads = {}
+      @responses = {}
+      @thread = Thread.new do
+        loop do
+          # read the answer of the server back in
+          answer = MarilynRPC::Envelope.new
+          # read the header to have the size
+          answer.parse!(@socket.read(4))
+          # so now that we know the site, read the rest of the envelope
+          answer.parse!(@socket.read(answer.size))
+
+          # returns the result part of the mail or raise the exception if there is 
+          # one
+          mail = MarilynRPC::MailFactory.unpack(answer)
+          @semaphore.synchronize do
+            @responses[mail.tag] = mail # save the mail for the waiting thread
+            @threads.delete(mail.tag).wakeup # wake up the waiting thread
+          end
+        end
+      end
     end
 
     # Disconnect the client from the remote.
@@ -60,7 +69,7 @@ module MarilynRPC
     # @return [MarilynRPC::NativeClientProxy] the proxy obejct that will serve
     #   all calls
     def for(path)
-      NativeClientProxy.new(path, @socket)
+      NativeClientProxy.new(path, self)
     end
     
     # Connect to a unix domain socket.
@@ -93,6 +102,44 @@ module MarilynRPC
         new(secure_socket)
       else
         new(TCPSocket.open(host, port))
+      end
+    end
+    
+    # Executes a client call blocking. To issue an async call one needs to
+    # have start separate threads. THe Native client uses then multiplexing to
+    # avoid the other threads blocking.
+    # @api private
+    # @param [Object] path the path to identifiy the service
+    # @param [Symbol, String] method the method name to call on the service
+    # @param [Array<Object>] args the arguments that are passed to the remote
+    #   side
+    # @return [Object] the result of the call
+    def execute(path, method, args)
+      thread = Thread.current
+      tag = "#{Time.now.to_f}:#{thread.object_id}"
+      
+      @semaphore.synchronize do
+        # since this client can't multiplex, we set the tag to nil
+        @socket.write(MarilynRPC::MailFactory.build_call(tag, path, method, args))
+      end
+      
+      # lets write our self to the list of waining threads
+      @semaphore.synchronize { @threads[tag] = thread }
+      
+      # enable the listening for a response from the remote end
+      @thread.wakeup
+      
+      # stop the current thread, the thread will be started after the response
+      # arrived
+      Thread.stop
+
+      # get mail from responses
+      mail = @semaphore.synchronize { @responses.delete(tag) }
+
+      if mail.is_a? MarilynRPC::CallResponseMail
+        mail.result
+      else
+        raise mail.exception
       end
     end
   end
