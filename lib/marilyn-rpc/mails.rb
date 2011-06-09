@@ -56,7 +56,7 @@ module MarilynRPC
     end
   end
   
-  class ExceptionMail < Struct.new(:exception)
+  class ExceptionMail < Struct.new(:tag, :exception)
     include MarilynRPC::MailHelper
     TYPE = MarilynRPC::MailHelper.type(3)
     

@@ -36,14 +36,15 @@ module MarilynRPC::Server
     if @envelope.finished?
       begin
         # grep the request
-        answer = @cache.call(MarilynRPC::MailFactory.unpack(@envelope))
+        mail = MarilynRPC::MailFactory.unpack(@envelope)
+        answer = @cache.call(mail)
         if answer.is_a? MarilynRPC::CallResponseMail
           send_mail(answer)
         else
           answer.connection = self # pass connection for async responses
         end
       rescue => exception
-        send_mail(MarilynRPC::ExceptionMail.new(exception))
+        send_mail(MarilynRPC::ExceptionMail.new(mail.tag, exception))
       end
       
       # initialize the next envelope
