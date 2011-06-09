@@ -19,7 +19,6 @@ done = false
 t3 = Thread.new do
   while !done
     sleep 1
-    p client
     STDOUT.print "."
     STDOUT.flush
   end
@@ -29,10 +28,6 @@ t1.join
 t2.join
 
 done = true
-t3.join
-
-p client
-
 end_time = Time.now
 
 puts "#{start_time - end_time}"
