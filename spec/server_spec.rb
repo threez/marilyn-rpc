@@ -25,7 +25,7 @@ describe MarilynRPC::Server do
     envelope.parse!(@server.data)
     mail = MarilynRPC::ExceptionMail.new
     mail.decode(envelope.content)
-    mail.exception.message.should == "The passed type \"T\" is unknown!"
+    mail.exception.message.should == "The passed envelope is broken!"
     @server.receive_data(MarilynRPC::Envelope.new("Test2").encode)
     @server.receive_data(MarilynRPC::Envelope.new("Test3").encode)
     @server.unbind

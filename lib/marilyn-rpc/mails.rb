@@ -61,11 +61,11 @@ module MarilynRPC
     TYPE = MarilynRPC::MailHelper.type(3)
     
     def encode
-      TYPE + serialize(self.exception)
+      TYPE + serialize([self.tag, self.exception])
     end
     
     def decode(data)
-      self.exception = deserialize(only_data(data))
+      self.tag, self.exception = deserialize(only_data(data))
     end
   end
   
@@ -86,7 +86,7 @@ module MarilynRPC
         when MarilynRPC::ExceptionMail::TYPE
           mail = MarilynRPC::ExceptionMail.new
         else
-          raise ArgumentError.new("The passed type #{type.inspect} is unknown!")
+          raise MarilynRPC::BrokenEnvelopeError.new("The passed envelope is broken!")
       end  
       mail.decode(data)
       mail

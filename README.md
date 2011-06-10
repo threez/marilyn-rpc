@@ -9,10 +9,7 @@ The services are unique per connection, so if you have 50 connections, 50
 service objects will be used, if (and only if) they are requested by the client.
 
 Since this is a session dedicated to one connection, marilyn has support for per 
-connection caching by using instance variables. Further on, it is planned to 
-enhance the capabilities of marilyn to allow connection based authentication.
-Like in other protocols (e.g. IMAP) where some methods can be called
-unauthenticated and some not.
+connection caching by simply using instance variables.
 
 Like in IMAP marilyn supports sending of multiple requests to a server over one
 connection. This feature is called multiplexing supported by the current
@@ -121,6 +118,44 @@ To enable it on the server side one has to pass the secure flag:
 The client also simply has to enable a secure connection:
 
     client = MarilynRPC::NativeClient.connect_tcp('localhost', 8008, :secure => true)
+
+## Authentication
+
+If some remote service methods only should be called using a username/password
+protection, one simply has to define which method and what mechanism:
+
+    MarilynRPC::Service.authenticate_with do |username, password|
+      username == "testuserid" && password == "secret"
+    end
+
+    class TestService < MarilynRPC::Service
+      register :test
+      authentication_required :add
+  
+      def time # unauthenticated
+        puts session_username
+        puts session_authenticated?
+        Time.now
+      end
+  
+      def add(a, b) # authenticated
+        puts session_username
+        puts session_authenticated?
+        a + b
+      end
+    end
+    
+The client simple has to do the authentication before start marking calls:
+
+    client = MarilynRPC::NativeClient.connect_tcp('localhost', 8000)
+    TestService = client.for(:test)
+
+    p TestService.time.to_f
+    client.authenticate "testuserid", "secret"
+    p TestService.add(1, 2)
+
+    client.disconnect
+
 
 ## Async Server Example & NativeClient
 

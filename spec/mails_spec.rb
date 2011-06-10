@@ -46,11 +46,12 @@ describe "MarilynRPC Mails" do
       rescue Exception => ex
         exception = ex
       end
-      mail = MarilynRPC::ExceptionMail.new(exception)
+      mail = MarilynRPC::ExceptionMail.new(123, exception)
       data = mail.encode
       data.should include("TestError")
       mail = MarilynRPC::ExceptionMail.new
       mail.decode(data)
+      mail.tag.should == 123
       mail.exception.message.should == "TestError"
       mail.exception.backtrace.size.should > 1
     end

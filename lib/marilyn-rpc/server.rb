@@ -34,17 +34,12 @@ module MarilynRPC::Server
     
     # was massage parsed successfully?
     if @envelope.finished?
-      begin
-        # grep the request
-        mail = MarilynRPC::MailFactory.unpack(@envelope)
-        answer = @cache.call(mail)
-        if answer.is_a? MarilynRPC::CallResponseMail
-          send_mail(answer)
-        else
-          answer.connection = self # pass connection for async responses
-        end
-      rescue => exception
-        send_mail(MarilynRPC::ExceptionMail.new(mail.tag, exception))
+      # grep the request
+      answer = @cache.call(@envelope)
+      if answer.is_a? MarilynRPC::Gentleman
+        answer.connection = self # pass connection for async responses
+      else  
+        send_mail(answer)
       end
       
       # initialize the next envelope

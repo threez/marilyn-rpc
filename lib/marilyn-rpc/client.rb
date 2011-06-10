@@ -2,11 +2,12 @@ require 'socket'
 require 'thread'
 
 module MarilynRPC
-  class BlankSlate
+  # A class with nothing but `__send__` and `__id__`
+  class ClientBlankSlate
     instance_methods.each { |m| undef_method m unless m =~ /^__/ }
   end
   
-  class NativeClientProxy < BlankSlate
+  class NativeClientProxy < ClientBlankSlate
     # Creates a new Native client proxy, were the calls get send to the remote
     # side.
     # @param [Object] path the path that is used to identify the service
@@ -61,6 +62,16 @@ module MarilynRPC
     # Disconnect the client from the remote.
     def disconnect
       @socket.close
+    end
+    
+    # authenicate the client to call methods that require authentication
+    # @param [String] username the username of the client
+    # @param [String] password the password of the client
+    # @param [Symbol] method the method to use for authentication, currently
+    #   only plain is supported. So make sure you are using a secure socket.
+    def authenticate(username, password, method = :plain)
+      execute(MarilynRPC::Service::AUTHENTICATION_PATH,
+              "authenticate_#{method}".to_sym, [username, password])
     end
 
     # Creates a new Proxy Object for the connection.
@@ -139,8 +150,15 @@ module MarilynRPC
       if mail.is_a? MarilynRPC::CallResponseMail
         mail.result
       else
-        raise mail.exception
+        raise MarilynError.new # raise exception to capture the client backtrace
       end
+    rescue MarilynError => exception
+      # add local and remote trace together and reraise the original exception
+      backtrace = []
+      backtrace += exception.backtrace
+      backtrace += mail.exception.backtrace
+      mail.exception.set_backtrace(backtrace)
+      raise mail.exception
     end
   end
 end

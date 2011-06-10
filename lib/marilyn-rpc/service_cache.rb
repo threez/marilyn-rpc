@@ -1,33 +1,53 @@
-class MarilynRPC::ServiceCache  
+# # This class represents a per connection cache of the service instances.
+# @attr [String, nil] username the username of a authenticated user oder `nil`
+class MarilynRPC::ServiceCache
+  attr_accessor :username
+  
   # creates the service cache
   def initialize
     @services = {}
   end
   
   # call a service in the service cache
-  # @param [MarilynRPC::CallRequestMail] mail the mail request object, that
-  #   should be handled
+  # @param [MarilynRPC::Envelope] envelope the envelope that contains the
+  #   request subject (mail), that should be handled
   # @return [MarilynRPC::CallResponseMail, MarilynRPC::Gentleman] either a 
   #   Gentleman if the response is async or an direct response.
-  def call(mail)
-    # check if the correct mail object was send
-    unless mail.is_a?(MarilynRPC::CallRequestMail)
-      raise ArgumentError.new("Expected CallRequestMail Object!")
-    end
+  def call(envelope)
+    mail = MarilynRPC::MailFactory.unpack(envelope)
+    tag = mail.tag
     
-    # call the service instance using the argument of the mail
-    # puts "call #{mail.method}@#{mail.path} with #{mail.args.inspect}"
-    result = lookup(mail.path).send(mail.method, *mail.args)
-    # puts "result => #{result.inspect}"
-    
-    # no direct result, register callback
-    if result.is_a? MarilynRPC::Gentleman
-      result.tag = mail.tag # set the correct mail tag for the answer
-      result
+    if mail.is_a?(MarilynRPC::CallRequestMail) # handle a call request
+      # fetch the service and check if the user has the permission to access the
+      # service
+      service = lookup(mail.path)
+      method = mail.method.to_sym
+      if service.class.__methods_with_authentication__[method] && !@username 
+        raise MarilynRPC::PermissionDeniedError.new("No permission to access" \
+              " the #{service.class.name}##{method}")
+      end
+  
+      # call the service instance using the argument of the mail
+      #puts "call #{mail.method}@#{mail.path} with #{mail.args.inspect}"
+      result = service.__send__(method, *mail.args)
+      #puts "result => #{result.inspect}"
+  
+      # no direct result, register callback
+      if result.is_a? MarilynRPC::Gentleman
+        result.tag = tag # set the correct mail tag for the answer
+        result
+      else
+        MarilynRPC::CallResponseMail.new(tag, result) # direct response
+      end
     else
-      # make response
-      MarilynRPC::CallResponseMail.new(mail.tag, result)
+      raise MarilynRPC::BrokenEnvelopeError.new("Expected CallRequestMail Object!")
     end
+  rescue MarilynRPC::BrokenEnvelopeError => exception
+    MarilynRPC::ExceptionMail.new(nil, exception)
+  rescue => exception
+    #puts exception
+    #puts exception.backtrace.join("\n   ")
+    MarilynRPC::ExceptionMail.new(tag, exception)
   end
   
   # get the service from the cache or the service registry
@@ -38,12 +58,13 @@ class MarilynRPC::ServiceCache
     if service = @services[path]
       return service
     # it's not in the cache, so try lookup in the service registry
-    elsif service = MarilynRPC::Service.registry[path]
+    elsif service = MarilynRPC::Service.__registry__[path]
       @services[path] = service.new
-      @services[path].run_callbacks! :after_connect
+      @services[path].service_cache = self
+      @services[path].__run_callbacks__(:after_connect)
       return @services[path]
     else
-      raise ArgumentError.new("Service #{path} unknown!")
+      raise MarilynRPC::UnknownServiceError.new("Service #{path} unknown!")
     end
   end
   
@@ -52,7 +73,7 @@ class MarilynRPC::ServiceCache
   # @api private
   def disconnect!
     @services.each do |path, service|
-      service.run_callbacks! :after_disconnect
+      service.__run_callbacks__(:after_disconnect)
     end
   end
 end
