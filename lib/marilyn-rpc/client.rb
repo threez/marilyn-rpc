@@ -4,7 +4,7 @@ require 'thread'
 module MarilynRPC
   # A class with nothing but `__send__` and `__id__`
   class ClientBlankSlate
-    instance_methods.each { |m| undef_method m unless m =~ /^__/ }
+    instance_methods.each { |m| undef_method m unless m =~ /^__|object_id/ }
   end
   
   class NativeClientProxy < ClientBlankSlate

@@ -1,6 +1,6 @@
 # A class with nothing but `__send__`, `__id__`, `class` and `public_methods`.
 class ServiceBlankSlate
-  instance_methods.each { |m| undef_method m unless m =~ /^__|public_methods|class/ }
+  instance_methods.each { |m| undef_method m unless m =~ /^__|public_methods|class|object_id/ }
 end 
 
 # This class represents the base for all events, it is used for registering
