@@ -39,6 +39,17 @@ describe MarilynRPC::Gentleman do
     unpack_envelope(g.connection.data).result.should == 3
   end
   
+  it "should be possible to defer a process to a gentleman" do
+    deferable = DeferObjectMock.new
+    
+    g = MarilynRPC::Gentleman.new(deferable) do |a, b|
+      raise Exception.new
+    end
+    g.connection = ConnectionMock.new
+    deferable.call(1, 2)
+    unpack_envelope(g.connection.data).exception.should be_a(Exception)
+  end
+  
   it "should be possible to create a gentleman helper" do
     callback = nil
     

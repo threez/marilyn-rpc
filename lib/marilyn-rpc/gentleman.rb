@@ -57,6 +57,11 @@ class MarilynRPC::Gentleman
     data = MarilynRPC::Envelope.new(mail.encode, 
                                     MarilynRPC::CallResponseMail::TYPE).encode
     connection.send_data(data)
+  rescue Exception => exception
+    mail = MarilynRPC::ExceptionMail.new(self.tag, exception)
+    data = MarilynRPC::Envelope.new(mail.encode,
+                                    MarilynRPC::ExceptionMail::TYPE).encode
+    connection.send_data(data)
   end
   
   # The helper that will be called by the deferable to call 
