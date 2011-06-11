@@ -134,10 +134,10 @@ module MarilynRPC
       @semaphore.synchronize {
         # since this client can't multiplex, we set the tag to nil
         @socket.write(MarilynRPC::MailFactory.build_call(tag, path, method, args))
+        
+        # lets write our self to the list of waining threads
+        @threads[tag] = thread
       }
-      
-      # lets write our self to the list of waining threads
-      @semaphore.synchronize { @threads[tag] = thread }
       
       # stop the current thread, the thread will be started after the response
       # arrived
