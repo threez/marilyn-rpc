@@ -20,14 +20,14 @@ describe MarilynRPC::Server do
   
   it "should be possible to send multiple letters to the server" do
     @server.post_init
-    @server.receive_data(MarilynRPC::Envelope.new("Test1").encode)
+    @server.receive_data(MarilynRPC::Envelope.new("Test1", 1).encode)
     envelope = MarilynRPC::Envelope.new
     envelope.parse!(@server.data)
     mail = MarilynRPC::ExceptionMail.new
     mail.decode(envelope.content)
-    mail.exception.message.should == "The passed envelope is broken!"
-    @server.receive_data(MarilynRPC::Envelope.new("Test2").encode)
-    @server.receive_data(MarilynRPC::Envelope.new("Test3").encode)
+    mail.exception.message.should include("incompatible marshal file format")
+    @server.receive_data(MarilynRPC::Envelope.new("Test2", 1).encode)
+    @server.receive_data(MarilynRPC::Envelope.new("Test3", 1).encode)
     @server.unbind
   end
 end

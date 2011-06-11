@@ -36,23 +36,16 @@ module MarilynRPC::Server
     if @envelope.finished?
       # grep the request
       answer = @cache.call(@envelope)
-      if answer.is_a? MarilynRPC::Gentleman
+      if answer.is_a? String
+        send_data(answer)
+      else
         answer.connection = self # pass connection for async responses
-      else  
-        send_mail(answer)
       end
       
       # initialize the next envelope
-      @envelope = MarilynRPC::Envelope.new
+      @envelope.reset!
       receive_data(overhang) if overhang # reenter the data loop
     end
-  end
-  
-  # Send a response mail back on the wire of buffer
-  # @param [MarilynRPC::ExceptionMail, MarilynRPC::CallResponseMail] mail the 
-  #   mail that should be send to the client
-  def send_mail(mail)
-    send_data(MarilynRPC::Envelope.new(mail.encode).encode)
   end
   
   # Handler for client disconnect

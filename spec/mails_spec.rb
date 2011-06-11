@@ -62,7 +62,8 @@ describe "MarilynRPC Mails" do
       tag = Time.now.to_f
       mail = MarilynRPC::CallRequestMail.new(
         tag, "/user", :find_by_name, ["mr.x"])
-      envelope = MarilynRPC::Envelope.new(mail.encode)
+      envelope = MarilynRPC::Envelope.new(mail.encode, 
+                                          MarilynRPC::CallRequestMail::TYPE)
       mail = MarilynRPC::MailFactory.unpack(envelope)
       mail.should be_a(MarilynRPC::CallRequestMail)
     end

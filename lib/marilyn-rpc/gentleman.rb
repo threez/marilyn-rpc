@@ -54,7 +54,9 @@ class MarilynRPC::Gentleman
   # @api private
   def handle(*args)
     mail = MarilynRPC::CallResponseMail.new(self.tag, self.callback.call(*args))
-    connection.send_mail(mail)
+    data = MarilynRPC::Envelope.new(mail.encode, 
+                                    MarilynRPC::CallResponseMail::TYPE).encode
+    connection.send_data(data)
   end
   
   # The helper that will be called by the deferable to call 

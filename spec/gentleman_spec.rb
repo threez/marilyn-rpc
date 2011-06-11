@@ -22,7 +22,7 @@ describe MarilynRPC::Gentleman do
 
     class ConnectionMock
       attr_accessor :data
-      def send_mail(obj)
+      def send_data(obj)
         @data = obj
       end
     end
@@ -36,7 +36,7 @@ describe MarilynRPC::Gentleman do
     end
     g.connection = ConnectionMock.new
     deferable.call(1, 2)
-    g.connection.data.result.should == 3
+    unpack_envelope(g.connection.data).result.should == 3
   end
   
   it "should be possible to create a gentleman helper" do
@@ -52,6 +52,6 @@ describe MarilynRPC::Gentleman do
     
     g.connection = ConnectionMock.new
     callback.call(1, 2)
-    g.connection.data.result.should == 3
+    unpack_envelope(g.connection.data).result.should == 3
   end
 end

@@ -36,18 +36,21 @@ class MarilynRPC::ServiceCache
       if result.is_a? MarilynRPC::Gentleman
         result.tag = tag # set the correct mail tag for the answer
         result
-      else
-        MarilynRPC::CallResponseMail.new(tag, result) # direct response
+      else # direct response
+        MarilynRPC::Envelope.new(MarilynRPC::CallResponseMail.new(tag, result).encode, 
+                                 MarilynRPC::CallResponseMail::TYPE).encode
       end
     else
       raise MarilynRPC::BrokenEnvelopeError.new("Expected CallRequestMail Object!")
     end
   rescue MarilynRPC::BrokenEnvelopeError => exception
-    MarilynRPC::ExceptionMail.new(nil, exception)
+    MarilynRPC::Envelope.new(MarilynRPC::ExceptionMail.new(nil, exception).encode, 
+                             MarilynRPC::ExceptionMail::TYPE).encode
   rescue => exception
     #puts exception
     #puts exception.backtrace.join("\n   ")
-    MarilynRPC::ExceptionMail.new(tag, exception)
+    MarilynRPC::Envelope.new(MarilynRPC::ExceptionMail.new(tag, exception).encode, 
+                             MarilynRPC::ExceptionMail::TYPE).encode
   end
   
   # get the service from the cache or the service registry

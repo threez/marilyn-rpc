@@ -59,6 +59,7 @@ describe MarilynRPC::ServiceCache do
   
   it "should be possible to call a sync method" do
     answer = @cache.call(envelope_call(1, "/test", :sync_method, 1, 2))
+    answer = unpack_envelope(answer)
     answer.should be_a(MarilynRPC::CallResponseMail)
     answer.result.should == 3
   end
@@ -100,11 +101,13 @@ describe MarilynRPC::ServiceCache do
     
     it "should be possible to call the normal method" do
       answer = @cache.call(envelope_call(1, "/test", :normal))
+      answer = unpack_envelope(answer)
       answer.result.should == true
     end
     
     it "should not be possible to call an secure method without authentication" do
       answer = @cache.call(envelope_call(1, "/test", :secure))
+      answer = unpack_envelope(answer)
       answer.should be_a(MarilynRPC::ExceptionMail)
       answer.exception.should be_a(MarilynRPC::PermissionDeniedError)
     end
@@ -113,27 +116,32 @@ describe MarilynRPC::ServiceCache do
       @cache.call(envelope_call(1, MarilynRPC::Service::AUTHENTICATION_PATH, 
                                   :authenticate_plain, "testuserid", "secret"))
       answer = @cache.call(envelope_call(1, "/test", :secure))
+      answer = unpack_envelope(answer)
       answer.result.should == true
     end
     
     it "should be possible to call the username from within the service without an authenticated user" do
       answer = @cache.call(envelope_call(1, "/test", :username))
+      answer = unpack_envelope(answer)
       answer.result.should == nil
     end
     
     it "should be possible to call the username from within the service with an authenticated user" do
       @cache.username = "test"
       answer = @cache.call(envelope_call(1, "/test", :username))
+      answer = unpack_envelope(answer)
       answer.result.should == "test"
     end
     
     it "should be possible to call the authentication from within the service" do
       answer = @cache.call(envelope_call(1, "/test", :logged_in?))
+      answer = unpack_envelope(answer)
       answer.result.should == false
       
       # set the username
       @cache.username = "test"
       answer = @cache.call(envelope_call(1, "/test", :logged_in?))
+      answer = unpack_envelope(answer)
       answer.result.should == true
     end
   end

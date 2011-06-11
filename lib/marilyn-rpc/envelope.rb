@@ -1,13 +1,26 @@
 # This class handles the envelope parsing and encoding which will be used by the
 # server to handle multiple writes into the envelope.
 class MarilynRPC::Envelope
+  HEADER_SIZE = 5
+  HEADER_ENCODING = "NC".freeze
+  
   # size of the envelope content
   attr_reader :size
   
+  # the type of mail that is in the envelope
+  attr_accessor :type
+  
   # create a new envelope instance
   # @param [String] content the content of the new envelope
-  def initialize(content = nil)
+  # @param [String] type the type of content
+  def initialize(content = nil, type = nil)
     self.content = content
+    @type = type
+  end
+  
+  # resets the envelope object to contain no data, like if it was newly created
+  def reset!
+    @buffer, @size, @type = "", nil, nil
   end
   
   # parses the passed data
@@ -17,20 +30,24 @@ class MarilynRPC::Envelope
   #   In case there are no data it will return nil.
   def parse!(data)
     @buffer += data
-    overhang = nil
 
     # parse the length field of the 
-    if @size.nil? && @buffer.size >= 4 
-      # extract 4 bytes length header
-      @size = @buffer.slice!(0...4).unpack("N").first
+    if @size == nil && @buffer.size >= HEADER_SIZE
+      parse_header!(@buffer.slice!(0...HEADER_SIZE))
     end
     
     # envelope is complete and contains overhang
-    if !@size.nil? && @buffer.size > @size
-      overhang = @buffer.slice!(@size, @buffer.size)
+    if @size && @buffer.size > @size
+      return @buffer.slice!(@size, @buffer.size) # returns the overhang
     end
-    
-    overhang
+  end
+  
+  # parses the header without having much checking overhead. This is useful in
+  # situations where we can assure the size beforehand
+  # @param [String] header the header byte string of size {HEADER_SIZE}
+  # @api private
+  def parse_header!(header)
+    @size, @type = header.unpack(HEADER_ENCODING)
   end
   
   # returns the content of the envelope
@@ -51,7 +68,7 @@ class MarilynRPC::Envelope
   # encodes the envelope to be send over the wire
   # @return [String] encoded envelope
   def encode
-    [@size].pack("N") + @buffer
+    [@size, @type].pack(HEADER_ENCODING) + @buffer
   end
 
   # checks if the complete envelope was allready parsed
