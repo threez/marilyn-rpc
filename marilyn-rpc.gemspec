@@ -17,14 +17,14 @@ EOF
   
   dependencies = [
     [:runtime,     "eventmachine",  "~> 0.12.10"],
-    [:development, "rspec",         "~> 2.4"],
+    [:development, "rspec",         "~> 2.8"],
+    [:development, "rake"],
   ]
   
   s.files         = Dir['**/*']
   s.test_files    = Dir['test/**/*'] + Dir['spec/**/*']
   s.executables   = Dir['bin/*'].map { |f| File.basename(f) }
   s.require_paths = ["lib"]
-  
   
   ## Make sure you can build the gem on older versions of RubyGems too:
   s.rubygems_version = "1.3.7"

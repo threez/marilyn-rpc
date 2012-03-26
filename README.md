@@ -1,6 +1,6 @@
 ![alt text](https://raw.github.com/threez/marilyn-rpc/master/kiss.png "MarilynRPC")
 
-# MarilynRPC
+# MarilynRPC ![build status](https://secure.travis-ci.org/threez/marilyn-rpc.png)
 
 Marilyn is a simple, elegant rpc service and client infrastructure that has
 learned some lessons on how we organize our code in typical web projects like
